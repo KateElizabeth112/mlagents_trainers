@@ -54,9 +54,13 @@ class LearningModel(object):
             self.m_size = 0
         self.normalize = normalize
         self.act_size = brain.vector_action_space_size
-        self.vec_obs_size = (
-            brain.vector_observation_space_size * brain.num_stacked_vector_observations
-        )
+        #self.vec_obs_size = (
+        #        brain.vector_observation_space_size * brain.num_stacked_vector_observations
+        #)
+
+        # Kate
+        self.vec_obs_size = 61
+
         self.vis_obs_size = brain.number_visual_observations
         tf.Variable(
             int(brain.vector_action_space_type == "continuous"),
@@ -426,22 +430,35 @@ class LearningModel(object):
         and the concatenated normalized log probs
         """
         action_idx = [0] + list(np.cumsum(action_size))
+        # Kate
+        #print('Action size: {}'.format(action_size))
         branches_logits = [
             all_logits[:, action_idx[i] : action_idx[i + 1]]
             for i in range(len(action_size))
         ]
+
+        # Kate
+        #print("Action masks: {}".format(action_masks))
+
         branch_masks = [
             action_masks[:, action_idx[i] : action_idx[i + 1]]
             for i in range(len(action_size))
         ]
+
+        # softmax physics
+        # raw probs = branches logits + epsilon
         raw_probs = [
             tf.multiply(tf.nn.softmax(branches_logits[k]) + EPSILON, branch_masks[k])
             for k in range(len(action_size))
         ]
+
+        # actual probs mate
         normalized_probs = [
             tf.divide(raw_probs[k], tf.reduce_sum(raw_probs[k], axis=1, keepdims=True))
             for k in range(len(action_size))
         ]
+
+        # draw from categorical distribution over each action
         output = tf.concat(
             [
                 tf.multinomial(tf.log(normalized_probs[k] + EPSILON), 1)
@@ -449,6 +466,10 @@ class LearningModel(object):
             ],
             axis=1,
         )
+
+        # change output to all zeros
+        #output = tf.zeros(tf.shape(output))
+
         return (
             output,
             tf.concat([normalized_probs[k] for k in range(len(action_size))], axis=1),

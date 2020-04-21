@@ -144,6 +144,8 @@ class PPOPolicy(TFPolicy):
         :param brain_info: BrainInfo object containing inputs.
         :return: Outputs from network as defined by self.inference_dict.
         """
+        # Kate
+        # the length of the vector observations is 16
         feed_dict = {
             self.model.batch_size: len(brain_info.vector_observations),
             self.model.sequence_length: 1,
@@ -164,7 +166,9 @@ class PPOPolicy(TFPolicy):
                 size=(len(brain_info.vector_observations), self.model.act_size[0])
             )
             feed_dict[self.model.epsilon] = epsilon
+
         feed_dict = self.fill_eval_dict(feed_dict, brain_info)
+
         run_out = self._execute_model(feed_dict, self.inference_dict)
         if self.use_continuous_act:
             run_out["random_normal_epsilon"] = epsilon
@@ -181,6 +185,14 @@ class PPOPolicy(TFPolicy):
         feed_dict = self.construct_feed_dict(self.model, mini_batch, num_sequences)
         stats_needed = self.stats_name_to_update_name
         update_stats = {}
+
+        # Kate
+        vector_obs_replacement = []
+        for i in range(len(mini_batch["vector_obs"])):
+            vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+
+        mini_batch["vector_obs"] = vector_obs_replacement
+
         # Collect feed dicts for all reward signals.
         for _, reward_signal in self.reward_signals.items():
             feed_dict.update(
@@ -218,7 +230,14 @@ class PPOPolicy(TFPolicy):
                 feed_dict[model.prev_action] = mini_batch["prev_action"]
             feed_dict[model.action_masks] = mini_batch["action_mask"]
         if self.use_vec_obs:
-            feed_dict[model.vector_in] = mini_batch["vector_obs"]
+            # kate
+            replacement_obs = []
+            for i in range(len(mini_batch["vector_obs"])):
+                replacement_obs.append(mini_batch["vector_obs"][i][:61])
+
+            #feed_dict[model.vector_in] = mini_batch["vector_obs"]
+            feed_dict[model.vector_in] = replacement_obs
+
         if self.model.vis_obs_size > 0:
             for i, _ in enumerate(self.model.visual_in):
                 feed_dict[model.visual_in[i]] = mini_batch["visual_obs%d" % i]
@@ -251,7 +270,10 @@ class PPOPolicy(TFPolicy):
                 brain_info.visual_observations[i][idx]
             ]
         if self.use_vec_obs:
-            feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx]]
+            # kate
+            #feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx]]
+            feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx][:61]]
+
         if self.use_recurrent:
             if brain_info.memories.shape[1] == 0:
                 brain_info.memories = self.make_empty_memory(len(brain_info.agents))

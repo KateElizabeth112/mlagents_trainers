@@ -191,6 +191,8 @@ class PPOModel(LearningModel):
             )
             self.memory_out = tf.identity(memory_out, name="recurrent_out")
 
+        # Kate: here's where they define the graph
+        # act_size has two dimensions
         policy_branches = []
         for size in self.act_size:
             policy_branches.append(

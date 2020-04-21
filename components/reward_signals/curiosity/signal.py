@@ -75,8 +75,21 @@ class CuriosityRewardSignal(RewardSignal):
             self.policy.model.sequence_length: self.policy.sequence_length,
         }
         if self.policy.use_vec_obs:
-            feed_dict[self.policy.model.vector_in] = mini_batch["vector_obs"]
-            feed_dict[self.model.next_vector_in] = mini_batch["next_vector_in"]
+            # Kate
+            vector_obs_replacement = []
+            for i in range(len(mini_batch["vector_obs"])):
+                vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+
+            #feed_dict[self.policy.model.vector_in] = mini_batch["vector_obs"]
+            feed_dict[self.policy.model.vector_in] = vector_obs_replacement
+
+            next_vector_replacement = []
+            for j in range(len(mini_batch["next_vector_in"])):
+                next_vector_replacement.append(mini_batch["next_vector_in"][j][:61])
+
+            #feed_dict[self.model.next_vector_in] = mini_batch["next_vector_in"]
+            feed_dict[self.model.next_vector_in] = next_vector_replacement
+
         if self.policy.model.vis_obs_size > 0:
             for i in range(len(self.policy.model.visual_in)):
                 _obs = mini_batch["visual_obs%d" % i]
@@ -129,8 +142,21 @@ class CuriosityRewardSignal(RewardSignal):
         else:
             feed_dict[policy_model.action_holder] = mini_batch["actions"]
         if self.policy.use_vec_obs:
-            feed_dict[policy_model.vector_in] = mini_batch["vector_obs"]
-            feed_dict[self.model.next_vector_in] = mini_batch["next_vector_in"]
+            # Kate
+            vector_obs_replacement = []
+            for i in range(len(mini_batch["vector_obs"])):
+                vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+
+            #feed_dict[policy_model.vector_in] = mini_batch["vector_obs"]
+            feed_dict[policy_model.vector_in] = vector_obs_replacement
+
+            next_vector_in_replacement = []
+            for j in range(len(mini_batch["next_vector_in"])):
+                next_vector_in_replacement.append(mini_batch["next_vector_in"][j][:61])
+
+            #feed_dict[self.model.next_vector_in] = mini_batch["next_vector_in"]
+            feed_dict[self.model.next_vector_in] = next_vector_in_replacement
+
         if policy_model.vis_obs_size > 0:
             for i, vis_in in enumerate(policy_model.visual_in):
                 feed_dict[vis_in] = mini_batch["visual_obs%d" % i]

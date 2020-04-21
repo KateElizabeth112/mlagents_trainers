@@ -148,15 +148,25 @@ class TFPolicy(Policy):
         :param out_dict: Output dictionary mapping names to nodes.
         :return: Dictionary mapping names to input data.
         """
+
         network_out = self.sess.run(list(out_dict.values()), feed_dict=feed_dict)
         run_out = dict(zip(list(out_dict.keys()), network_out))
+
         return run_out
 
     def fill_eval_dict(self, feed_dict, brain_info):
         for i, _ in enumerate(brain_info.visual_observations):
             feed_dict[self.model.visual_in[i]] = brain_info.visual_observations[i]
         if self.use_vec_obs:
-            feed_dict[self.model.vector_in] = brain_info.vector_observations
+            # Kate
+            replacement_obs = []
+            for i in range(len(brain_info.vector_observations)):
+                replacement_obs.append(brain_info.vector_observations[i][:61])
+
+            #feed_dict[self.model.vector_in] = brain_info.vector_observations
+
+            feed_dict[self.model.vector_in] = replacement_obs
+
         if not self.use_continuous_act:
             feed_dict[self.model.action_masks] = brain_info.action_masks
         return feed_dict
