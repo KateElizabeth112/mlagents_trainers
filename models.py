@@ -36,6 +36,7 @@ class LearningModel(object):
         tf.set_random_seed(seed)
         self.brain = brain
         self.vector_in = None
+        self.phys_in = None     # Kate
         self.global_step, self.increment_step, self.steps_to_increment = (
             self.create_global_steps()
         )
@@ -60,6 +61,7 @@ class LearningModel(object):
 
         # Kate
         self.vec_obs_size = 61
+        self.phys_obs_size = 9
 
         self.vis_obs_size = brain.number_visual_observations
         tf.Variable(
@@ -159,11 +161,18 @@ class LearningModel(object):
         self.vector_in = tf.placeholder(
             shape=[None, self.vec_obs_size], dtype=tf.float32, name=name
         )
+
+        # Kate
+        self.phys_in = tf.placeholder(
+            shape=[None, self.phys_obs_size], dtype=tf.float32, name="physics_input"
+        )
+
         if self.normalize:
             self.create_normalizer(self.vector_in)
-            return self.normalize_vector_obs(self.vector_in)
+            return self.normalize_vector_obs(self.vector_in), self.phys_in
         else:
-            return self.vector_in
+            return self.vector_in, self.phys_in
+
 
     def normalize_vector_obs(self, vector_obs):
         normalized_state = tf.clip_by_value(
@@ -508,7 +517,7 @@ class LearningModel(object):
                 brain.camera_resolutions[i], name="visual_observation_" + str(i)
             )
             self.visual_in.append(visual_input)
-        vector_observation_input = self.create_vector_input()
+        vector_observation_input, physics_observation_input = self.create_vector_input()
 
         # Pick the encoder function based on the EncoderType
         create_encoder_func = LearningModel.create_visual_observation_encoder
