@@ -160,12 +160,15 @@ class TFPolicy(Policy):
         if self.use_vec_obs:
             # Kate
             replacement_obs = []
+            phys_obs = []
             for i in range(len(brain_info.vector_observations)):
                 replacement_obs.append(brain_info.vector_observations[i][:61])
+                phys_obs.append(brain_info.vector_observations[i][61:])
 
             #feed_dict[self.model.vector_in] = brain_info.vector_observations
 
             feed_dict[self.model.vector_in] = replacement_obs
+            feed_dict[self.model.phys_in] = phys_obs
 
         if not self.use_continuous_act:
             feed_dict[self.model.action_masks] = brain_info.action_masks

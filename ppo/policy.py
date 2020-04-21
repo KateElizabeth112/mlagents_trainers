@@ -2,6 +2,7 @@ import logging
 import numpy as np
 from typing import Any, Dict, Optional
 import tensorflow as tf
+import copy
 
 from mlagents.envs.timers import timed
 from mlagents.envs.brain import BrainInfo, BrainParameters
@@ -186,20 +187,32 @@ class PPOPolicy(TFPolicy):
         stats_needed = self.stats_name_to_update_name
         update_stats = {}
 
-        # Kate
-        vector_obs_replacement = []
-        for i in range(len(mini_batch["vector_obs"])):
-            vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+        # Kate - very hacky
+        #vector_obs_replacement = []
+        #phys_obs = []
+        #for i in range(len(mini_batch["vector_obs"])):
+        #    vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+        #    phys_obs.append(mini_batch["vector_obs"][i][61:])
 
-        mini_batch["vector_obs"] = vector_obs_replacement
+        #vector_obs_placeholder = copy.deepcopy(mini_batch["vector_obs"])
+        #mini_batch["vector_obs"] = copy.deepcopy(vector_obs_replacement)
+
+        #print("First feed dict: {}".format(feed_dict))
 
         # Collect feed dicts for all reward signals.
+        # Kate - absolutely no clue what's going on here
         for _, reward_signal in self.reward_signals.items():
             feed_dict.update(
                 reward_signal.prepare_update(self.model, mini_batch, num_sequences)
             )
             stats_needed.update(reward_signal.stats_name_to_update_name)
 
+        #print("Updated feed dict: {}".format(feed_dict))
+        # Fix minibatch[vector_obs]
+        #mini_batch["vector_obs"] = copy.deepcopy(vector_obs_placeholder)
+        #feed_dict[self.model.phys_in] = phys_obs
+
+        # somehow the phys_in in the feed dict has shape (,0) instead of (,9)
         update_vals = self._execute_model(feed_dict, self.update_dict)
         for stat_name, update_name in stats_needed.items():
             update_stats[stat_name] = update_vals[update_name]
@@ -232,11 +245,14 @@ class PPOPolicy(TFPolicy):
         if self.use_vec_obs:
             # kate
             replacement_obs = []
+            phys_obs = []
             for i in range(len(mini_batch["vector_obs"])):
                 replacement_obs.append(mini_batch["vector_obs"][i][:61])
+                phys_obs.append(mini_batch["vector_obs"][i][61:])
 
             #feed_dict[model.vector_in] = mini_batch["vector_obs"]
             feed_dict[model.vector_in] = replacement_obs
+            feed_dict[model.phys_in] = phys_obs
 
         if self.model.vis_obs_size > 0:
             for i, _ in enumerate(self.model.visual_in):
@@ -273,6 +289,7 @@ class PPOPolicy(TFPolicy):
             # kate
             #feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx]]
             feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx][:61]]
+            feed_dict[self.model.phys_in] = [brain_info.vector_observations[idx][61:]]
 
         if self.use_recurrent:
             if brain_info.memories.shape[1] == 0:

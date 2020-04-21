@@ -77,15 +77,20 @@ class CuriosityRewardSignal(RewardSignal):
         if self.policy.use_vec_obs:
             # Kate
             vector_obs_replacement = []
+            phys_obs = []
             for i in range(len(mini_batch["vector_obs"])):
                 vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+                phys_obs.append(mini_batch["vector_obs"][i][61:])
 
             #feed_dict[self.policy.model.vector_in] = mini_batch["vector_obs"]
             feed_dict[self.policy.model.vector_in] = vector_obs_replacement
+            feed_dict[self.policy.model.phys_in] = phys_obs
 
             next_vector_replacement = []
+            next_phys_obs = []
             for j in range(len(mini_batch["next_vector_in"])):
                 next_vector_replacement.append(mini_batch["next_vector_in"][j][:61])
+                next_phys_obs.append(mini_batch["next_vector_in"][j][61:])
 
             #feed_dict[self.model.next_vector_in] = mini_batch["next_vector_in"]
             feed_dict[self.model.next_vector_in] = next_vector_replacement
@@ -144,11 +149,14 @@ class CuriosityRewardSignal(RewardSignal):
         if self.policy.use_vec_obs:
             # Kate
             vector_obs_replacement = []
+            phys_obs = []
             for i in range(len(mini_batch["vector_obs"])):
                 vector_obs_replacement.append(mini_batch["vector_obs"][i][:61])
+                phys_obs.append(mini_batch["vector_obs"][i][61:])
 
             #feed_dict[policy_model.vector_in] = mini_batch["vector_obs"]
             feed_dict[policy_model.vector_in] = vector_obs_replacement
+            feed_dict[policy_model.phys_in] = phys_obs
 
             next_vector_in_replacement = []
             for j in range(len(mini_batch["next_vector_in"])):
