@@ -152,6 +152,8 @@ class TFPolicy(Policy):
         network_out = self.sess.run(list(out_dict.values()), feed_dict=feed_dict)
         run_out = dict(zip(list(out_dict.keys()), network_out))
 
+        print("Run out: {}".format(run_out))
+
         return run_out
 
     def fill_eval_dict(self, feed_dict, brain_info):

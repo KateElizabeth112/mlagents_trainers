@@ -212,8 +212,9 @@ class PPOModel(LearningModel):
         self.action_masks = tf.placeholder(
             shape=[None, sum(self.act_size)], dtype=tf.float32, name="action_masks"
         )
-        output, _, normalized_logits = self.create_discrete_action_masking_layer(
-            self.all_log_probs, self.action_masks, self.act_size
+
+        output, _, normalized_logits, self.normalized_probs = self.create_discrete_action_masking_layer(
+            self.all_log_probs, self.phys_in, self.action_masks, self.act_size
         )
 
         self.output = tf.identity(output)
@@ -236,8 +237,8 @@ class PPOModel(LearningModel):
         self.all_old_log_probs = tf.placeholder(
             shape=[None, sum(self.act_size)], dtype=tf.float32, name="old_probabilities"
         )
-        _, _, old_normalized_logits = self.create_discrete_action_masking_layer(
-            self.all_old_log_probs, self.action_masks, self.act_size
+        _, _, old_normalized_logits, _ = self.create_discrete_action_masking_layer(
+            self.all_old_log_probs, self.phys_in, self.action_masks, self.act_size
         )
 
         action_idx = [0] + list(np.cumsum(self.act_size))

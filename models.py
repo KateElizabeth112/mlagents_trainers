@@ -428,7 +428,7 @@ class LearningModel(object):
         return hidden_flat
 
     @staticmethod
-    def create_discrete_action_masking_layer(all_logits, action_masks, action_size):
+    def create_discrete_action_masking_layer(all_logits, phys_actions, action_masks, action_size):
         """
         Creates a masking layer for the discrete actions
         :param all_logits: The concatenated unnormalized action probabilities for all branches
@@ -439,15 +439,11 @@ class LearningModel(object):
         and the concatenated normalized log probs
         """
         action_idx = [0] + list(np.cumsum(action_size))
-        # Kate
-        #print('Action size: {}'.format(action_size))
+
         branches_logits = [
             all_logits[:, action_idx[i] : action_idx[i + 1]]
             for i in range(len(action_size))
         ]
-
-        # Kate
-        #print("Action masks: {}".format(action_masks))
 
         branch_masks = [
             action_masks[:, action_idx[i] : action_idx[i + 1]]
@@ -467,28 +463,40 @@ class LearningModel(object):
             for k in range(len(action_size))
         ]
 
+        # Kate
+        branches_phys_actions = [
+            phys_actions[:, action_idx[i]: action_idx[i + 1]]
+            for i in range(len(action_size))
+        ]
+
+        # Add to normalised probs
+        probs_modified = normalized_probs + branches_phys_actions
+
+        # Re-normalise
+        normalized_probs_modified = [
+            tf.divide(probs_modified[k], tf.reduce_sum(probs_modified[k], axis=1, keepdims=True))
+            for k in range(len(action_size))
+        ]
+
         # draw from categorical distribution over each action
         output = tf.concat(
             [
-                tf.multinomial(tf.log(normalized_probs[k] + EPSILON), 1)
+                tf.multinomial(tf.log(normalized_probs_modified[k] + EPSILON), 1)
                 for k in range(len(action_size))
             ],
             axis=1,
         )
 
-        # change output to all zeros
-        #output = tf.zeros(tf.shape(output))
-
         return (
             output,
-            tf.concat([normalized_probs[k] for k in range(len(action_size))], axis=1),
+            tf.concat([normalized_probs_modified[k] for k in range(len(action_size))], axis=1),
             tf.concat(
                 [
-                    tf.log(normalized_probs[k] + EPSILON)
+                    tf.log(normalized_probs_modified[k] + EPSILON)
                     for k in range(len(action_size))
                 ],
                 axis=1,
-            ),
+            ), normalized_probs
         )
 
     def create_observation_streams(
