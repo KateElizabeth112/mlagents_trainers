@@ -470,7 +470,7 @@ class LearningModel(object):
         ]
 
         # Add to normalised probs
-        probs_modified = normalized_probs + branches_phys_actions
+        probs_modified = [normalized_probs[i] + branches_phys_actions[i] for i in range(len(action_size))]
 
         # Re-normalise
         normalized_probs_modified = [
@@ -496,7 +496,7 @@ class LearningModel(object):
                     for k in range(len(action_size))
                 ],
                 axis=1,
-            ), normalized_probs
+            ), normalized_probs, normalized_probs_modified
         )
 
     def create_observation_streams(

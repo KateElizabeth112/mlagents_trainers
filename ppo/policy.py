@@ -104,12 +104,13 @@ class PPOPolicy(TFPolicy):
             {
                 "action": self.model.output,
                 "log_probs": self.model.all_log_probs,
-                "normalized_probs": self.model.normalized_probs,
                 "value_heads": self.model.value_heads,
                 "value": self.model.value,
                 "entropy": self.model.entropy,
                 "learning_rate": self.model.learning_rate,
-                "physics_actions": self.model.phys_in
+                "physics_actions": self.model.phys_in,
+                "normalized_probs": self.model.normalized_probs,
+                "normalized_probs_modified": self.model.modified_probs,
             }
         )
         if self.use_continuous_act:
