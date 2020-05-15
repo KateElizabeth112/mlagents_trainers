@@ -162,8 +162,8 @@ class TFPolicy(Policy):
             replacement_obs = []
             phys_obs = []
             for i in range(len(brain_info.vector_observations)):
-                replacement_obs.append(brain_info.vector_observations[i][:61])
-                phys_obs.append(brain_info.vector_observations[i][61:])
+                replacement_obs.append(brain_info.vector_observations[i][:58])
+                phys_obs.append(brain_info.vector_observations[i][58:])
 
             #feed_dict[self.model.vector_in] = brain_info.vector_observations
 

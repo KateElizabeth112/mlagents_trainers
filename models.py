@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.layers as c_layers
 
-from mlagents.trainers.trainer import UnityTrainerException
+#from mlagents.trainers.trainer import UnityTrainerException
 from mlagents.envs.brain import CameraResolution
 
 logger = logging.getLogger("mlagents.trainers")
@@ -60,7 +60,7 @@ class LearningModel(object):
         #)
 
         # Kate
-        self.vec_obs_size = 61
+        self.vec_obs_size = 58
         self.phys_obs_size = 9
 
         self.vis_obs_size = brain.number_visual_observations
@@ -117,10 +117,10 @@ class LearningModel(object):
             learning_rate = tf.train.polynomial_decay(
                 lr, global_step, max_step, 1e-10, power=1.0
             )
-        else:
-            raise UnityTrainerException(
-                "The learning rate schedule {} is invalid.".format(lr_schedule)
-            )
+        #else:
+            #raise UnityTrainerException(
+            #    "The learning rate schedule {} is invalid.".format(lr_schedule)
+            #)
         return learning_rate
 
     @staticmethod
@@ -470,7 +470,8 @@ class LearningModel(object):
         ]
 
         # Add to normalised probs
-        probs_modified = [normalized_probs[i] + branches_phys_actions[i] for i in range(len(action_size))]
+        zeta = 0
+        probs_modified = [normalized_probs[i] + zeta * branches_phys_actions[i] for i in range(len(action_size))]
 
         # Re-normalise
         normalized_probs_modified = [
@@ -487,6 +488,11 @@ class LearningModel(object):
             axis=1,
         )
 
+        # Calculate cost function penalty for not following physics actions
+        loss_phys = 0
+        for l in range(len(action_size)):
+            loss_phys += tf.reduce_mean(tf.abs(normalized_probs[l] - branches_phys_actions[l]))
+
         return (
             output,
             tf.concat([normalized_probs_modified[k] for k in range(len(action_size))], axis=1),
@@ -496,7 +502,7 @@ class LearningModel(object):
                     for k in range(len(action_size))
                 ],
                 axis=1,
-            ), normalized_probs, normalized_probs_modified
+            ), normalized_probs, normalized_probs_modified, loss_phys
         )
 
     def create_observation_streams(

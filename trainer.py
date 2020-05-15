@@ -13,6 +13,7 @@ from mlagents.trainers.trainer_metrics import TrainerMetrics
 from mlagents.trainers.tf_policy import TFPolicy
 from mlagents.envs.brain import BrainParameters, AllBrainInfo
 
+
 import pickle as pkl
 
 LOGGER = logging.getLogger("mlagents.trainers")
@@ -186,20 +187,23 @@ class Trainer(object):
                     "Time Elapsed: {:0.3f} s "
                     "Mean "
                     "Reward: {:0.3f}"
-                    ". Std of Reward: {:0.3f}. {}".format(
+                    ". Std of Reward: {:0.3f}. {}.".format(
                         self.run_id,
                         self.brain_name,
                         step,
                         delta_train_start,
                         mean_reward,
                         np.std(self.stats["Environment/Cumulative Reward"]),
-                        is_training,
+                        is_training
+
                     )
                 )
 
                 f = open(self.trainer_parameters["model_path"] + ".pkl", 'ab')
-                pkl.dump([step, delta_train_start, mean_reward, np.std(self.stats["Environment/Cumulative Reward"])], f)
+                pkl.dump([step, delta_train_start, mean_reward, self.stats], f)
                 f.close()
+
+                print(self.stats.keys())
 
                 set_gauge(f"{self.brain_name}.mean_reward", mean_reward)
             else:

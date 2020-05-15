@@ -42,6 +42,8 @@ class PPOPolicy(TFPolicy):
         self.stats_name_to_update_name = {
             "Losses/Value Loss": "value_loss",
             "Losses/Policy Loss": "policy_loss",
+            "Losses/Physics Loss": "physics_loss"
+
         }
 
         self.create_model(
@@ -111,6 +113,7 @@ class PPOPolicy(TFPolicy):
                 "physics_actions": self.model.phys_in,
                 "normalized_probs": self.model.normalized_probs,
                 "normalized_probs_modified": self.model.modified_probs,
+                "physics_loss": self.model.loss_phys
             }
         )
         if self.use_continuous_act:
@@ -124,6 +127,7 @@ class PPOPolicy(TFPolicy):
                 "value_loss": self.model.value_loss,
                 "policy_loss": self.total_policy_loss,
                 "update_batch": self.model.update_batch,
+                "physics_loss": self.model.loss_phys
             }
         )
 
@@ -174,6 +178,7 @@ class PPOPolicy(TFPolicy):
         feed_dict = self.fill_eval_dict(feed_dict, brain_info)
 
         run_out = self._execute_model(feed_dict, self.inference_dict)
+
         if self.use_continuous_act:
             run_out["random_normal_epsilon"] = epsilon
         return run_out
@@ -209,6 +214,7 @@ class PPOPolicy(TFPolicy):
             model.advantage: mini_batch["advantages"],
             model.all_old_log_probs: mini_batch["action_probs"],
         }
+
         for name in self.reward_signals:
             feed_dict[model.returns_holders[name]] = mini_batch[
                 "{}_returns".format(name)
@@ -230,8 +236,8 @@ class PPOPolicy(TFPolicy):
             replacement_obs = []
             phys_obs = []
             for i in range(len(mini_batch["vector_obs"])):
-                replacement_obs.append(mini_batch["vector_obs"][i][:61])
-                phys_obs.append(mini_batch["vector_obs"][i][61:])
+                replacement_obs.append(mini_batch["vector_obs"][i][:58])
+                phys_obs.append(mini_batch["vector_obs"][i][58:])
 
             #feed_dict[model.vector_in] = mini_batch["vector_obs"]
             feed_dict[model.vector_in] = replacement_obs
@@ -271,8 +277,8 @@ class PPOPolicy(TFPolicy):
         if self.use_vec_obs:
             # kate
             #feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx]]
-            feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx][:61]]
-            feed_dict[self.model.phys_in] = [brain_info.vector_observations[idx][61:]]
+            feed_dict[self.model.vector_in] = [brain_info.vector_observations[idx][:58]]
+            feed_dict[self.model.phys_in] = [brain_info.vector_observations[idx][58:]]
 
         if self.use_recurrent:
             if brain_info.memories.shape[1] == 0:

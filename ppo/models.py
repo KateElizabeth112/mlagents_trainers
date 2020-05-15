@@ -56,6 +56,7 @@ class PPOModel(LearningModel):
         self.learning_rate = self.create_learning_rate(
             lr_schedule, lr, self.global_step, max_step
         )
+
         self.create_losses(
             self.log_probs,
             self.old_log_probs,
@@ -65,6 +66,7 @@ class PPOModel(LearningModel):
             epsilon,
             lr,
             max_step,
+            self.loss_phys
         )
 
     def create_cc_actor_critic(
@@ -213,7 +215,7 @@ class PPOModel(LearningModel):
             shape=[None, sum(self.act_size)], dtype=tf.float32, name="action_masks"
         )
 
-        output, _, normalized_logits, self.normalized_probs, self.modified_probs = self.create_discrete_action_masking_layer(
+        output, _, normalized_logits, self.normalized_probs, self.modified_probs, self.loss_phys = self.create_discrete_action_masking_layer(
             self.all_log_probs, self.phys_in, self.action_masks, self.act_size
         )
 
@@ -237,7 +239,7 @@ class PPOModel(LearningModel):
         self.all_old_log_probs = tf.placeholder(
             shape=[None, sum(self.act_size)], dtype=tf.float32, name="old_probabilities"
         )
-        _, _, old_normalized_logits, _, _ = self.create_discrete_action_masking_layer(
+        _, _, old_normalized_logits, _, _, _ = self.create_discrete_action_masking_layer(
             self.all_old_log_probs, self.phys_in, self.action_masks, self.act_size
         )
 
@@ -301,7 +303,7 @@ class PPOModel(LearningModel):
         )
 
     def create_losses(
-        self, probs, old_probs, value_heads, entropy, beta, epsilon, lr, max_step
+        self, probs, old_probs, value_heads, entropy, beta, epsilon, lr, max_step, loss_phys
     ):
         """
         Creates training-specific Tensorflow ops for PPO models.
@@ -313,6 +315,7 @@ class PPOModel(LearningModel):
         :param epsilon: Value for policy-divergence threshold
         :param lr: Learning rate
         :param max_step: Total number of training steps.
+        :param loss_phys: Loss from not following control model
         """
         self.returns_holders = {}
         self.old_values = {}
@@ -362,9 +365,11 @@ class PPOModel(LearningModel):
             tf.clip_by_value(r_theta, 1.0 - decay_epsilon, 1.0 + decay_epsilon)
             * advantage
         )
+
         self.policy_loss = -tf.reduce_mean(
             tf.dynamic_partition(tf.minimum(p_opt_a, p_opt_b), self.mask, 2)[1]
         )
+
         # For cleaner stats reporting
         self.abs_policy_loss = tf.abs(self.policy_loss)
 
@@ -373,6 +378,7 @@ class PPOModel(LearningModel):
             + 0.5 * self.value_loss
             - decay_beta
             * tf.reduce_mean(tf.dynamic_partition(entropy, self.mask, 2)[1])
+            + 1E-3 * self.loss_phys
         )
 
     def create_ppo_optimizer(self):
